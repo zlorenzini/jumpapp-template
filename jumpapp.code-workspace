@@ -1,0 +1,18 @@
+{
+    "folders": [
+        {
+            "path": "MyJumpApp"
+        }
+    ],
+    "settings": {
+        "jumpapp.root": "${workspaceFolder:MyJumpApp}",
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/.DS_Store": true
+        },
+        "python.analysis.extraPaths": [
+            "${workspaceFolder:MyJumpApp}/endpoints"
+        ],
+        "python.defaultInterpreterPath": "/usr/bin/python3"
+    }
+}
