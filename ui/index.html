@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JumpApp</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #0f0f11;
+      color: #e8e8ec;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    h1 { margin-bottom: 0.25rem; font-size: 1.5rem; }
+    p.subtitle { color: #888; margin-top: 0; margin-bottom: 2rem; font-size: 0.9rem; }
+
+    .card {
+      background: #1a1a1f;
+      border: 1px solid #2e2e36;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 540px;
+      margin-bottom: 1rem;
+    }
+
+    label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; color: #aaa; }
+
+    textarea {
+      width: 100%;
+      background: #111115;
+      border: 1px solid #2e2e36;
+      border-radius: 8px;
+      color: #e8e8ec;
+      padding: 0.75rem;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    button {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.65rem;
+      background: #5b6af0;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #4a59e0; }
+    button:disabled { background: #333; cursor: not-allowed; }
+
+    #output {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.875rem;
+      color: #c8ffc8;
+      min-height: 2rem;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #555;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+    .status-indicator.ok { background: #4caf50; }
+    .status-indicator.error { background: #f44336; }
+
+    #status-text { font-size: 0.8rem; color: #888; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+  <h1>JumpApp</h1>
+  <p class="subtitle">
+    <span class="status-indicator" id="status-dot"></span>
+    <span id="status-text">checking server…</span>
+  </p>
+
+  <div class="card">
+    <label for="input-box">Input</label>
+    <textarea id="input-box" placeholder="Enter your input here…"></textarea>
+    <button id="run-btn" disabled>Run inference</button>
+  </div>
+
+  <div class="card">
+    <label>Output</label>
+    <div id="output">—</div>
+  </div>
+
+  <script>
+    // ---------------------------------------------------------------------------
+    // Port discovery — reads from ?port= query param, falls back to 8000.
+    // Do NOT hard-code a port here; let JumpApp pass it in at launch time.
+    // ---------------------------------------------------------------------------
+    const params = new URLSearchParams(window.location.search);
+    const BASE_URL = `http://127.0.0.1:${params.get("port") ?? 8000}`;
+
+    const statusDot  = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
+    const runBtn     = document.getElementById("run-btn");
+    const inputBox   = document.getElementById("input-box");
+    const outputDiv  = document.getElementById("output");
+
+    // ---------------------------------------------------------------------------
+    // Poll /status on load
+    // ---------------------------------------------------------------------------
+    async function checkStatus() {
+      try {
+        const res  = await fetch(`${BASE_URL}/status`);
+        const data = await res.json();
+        statusDot.className  = "status-indicator ok";
+        statusText.textContent = `server ${data.status ?? "ok"} · v${data.version ?? "?"}`;
+        runBtn.disabled = false;
+      } catch {
+        statusDot.className  = "status-indicator error";
+        statusText.textContent = "server unreachable";
+      }
+    }
+
+    checkStatus();
+
+    // ---------------------------------------------------------------------------
+    // Run inference
+    // ---------------------------------------------------------------------------
+    runBtn.addEventListener("click", async () => {
+      const input = inputBox.value.trim();
+      if (!input) return;
+
+      runBtn.disabled   = true;
+      outputDiv.textContent = "…";
+
+      try {
+        const res  = await fetch(`${BASE_URL}/infer`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ input }),
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        outputDiv.textContent = typeof data.output === "string"
+          ? data.output
+          : JSON.stringify(data, null, 2);
+      } catch (err) {
+        outputDiv.textContent = `Error: ${err.message}`;
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+  </script>
+
+</body>
+</html>

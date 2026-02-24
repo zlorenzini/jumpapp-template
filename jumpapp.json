@@ -1,0 +1,27 @@
+{
+  "name": "my-jumpapp",
+  "version": "0.1.0",
+  "description": "A brief description of what this app does.",
+
+  "entrypoint": "server/main.py",
+  "ui": "ui/index.html",
+
+  "capabilities": {
+    "requires": []
+  },
+
+  "endpoints": {
+    "status": "/status",
+    "infer": "/infer",
+    "train": null
+  },
+
+  "models": {
+    "default": null
+  },
+
+  "dataset": {
+    "type": null,
+    "labels": null
+  }
+}
